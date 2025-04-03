@@ -9,7 +9,7 @@ This project is a **Task Management Application with Task Completion Report** bu
 ### 🏷 User Authentication:
 - User registration and login functionality using Django Rest Framework's authentication.
 
-### 🚖2. Roles and Permissions:
+### 2. Roles and Permissions:
 ## SuperAdmin:
 ○ Can manage admin(create, delete, assign roles, and promote/demote
 admin).
