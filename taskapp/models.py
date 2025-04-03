@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-class CustomeUser(AbstractUser):
+class CustomUser(AbstractUser):
     ROLE_CHOICES = (
         ("superadmin","SuperAdmin"),
         ("admin","Admin"),
