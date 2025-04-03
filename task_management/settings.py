@@ -57,7 +57,7 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
 }
 
-AUTH_USER_MODEL = "taskapp.CustomUser"
+AUTH_USER_MODEL = 'taskapp.CustomUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
