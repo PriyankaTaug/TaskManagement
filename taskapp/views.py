@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from taskapp.models import Task
-from taskapp.permissions import IsAdmin, IsSuperAdmin
+from taskapp.permissions import IsAdmin, IsSuperAdmin, IsUser
 from .serializers import *
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -258,3 +258,37 @@ class AdminViewReport(APIView):
         task_data = Task.objects.filter(created_by=admin,status="Completed")
         serializer = TaskSerializer(task_data,many=True)
         return Response({"message": "Task Completion Reports", "data": serializer.data}, status=status.HTTP_200_OK)
+
+
+
+'''User Can view their assigned tasks, update their task status, and submit a
+completion report (including worked hours).'''
+class UserCreation(APIView):
+    permission_classes = [IsUser]
+
+    def patch(self, request):
+        """Users can update task status and submit completion report"""
+        task_id = request.data.get("task_id")
+        status = request.data.get("status")
+        completion_report = request.data.get("completion_report")
+        worked_hours = request.data.get("worked_hours")
+        try:
+            task = Task.objects.get(id=task_id, assigned_to=request.user)
+        except Task.DoesNotExist:
+            return Response({"message": "Task not found or not assigned to you"}, status=status.HTTP_404_NOT_FOUND)
+
+        if status:
+            task.status = status
+        if completion_report:
+            task.completion_report = completion_report
+        if worked_hours:
+            task.worked_hours = worked_hours
+
+        task.save()
+        return Response({"message": "Task updated successfully"}, status=status.HTTP_200_OK)
+    
+    def get(self,request):
+        user = request.user
+        assigned_task = Task.objects.filter(assigned_to=user)
+        assigned_user = TaskSerializer(assigned_task,many=True)
+        return Response({assigned_task.data},status=status.HTTP_200_OK)
