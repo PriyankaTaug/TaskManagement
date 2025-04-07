@@ -1,14 +1,16 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
+from django.shortcuts import redirect
+from django.views import View
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
+from django.views.generic import TemplateView
 from taskapp.models import Task
 from taskapp.permissions import IsAdmin, IsSuperAdmin, IsUser
 from .serializers import *
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import get_user_model
 User = get_user_model() 
 
@@ -30,25 +32,38 @@ class RegisterUserAPIView(APIView):
 
 '''Login using username and password'''
 class LoginUser(APIView):
-    def post(self,request):
+    def post(self, request):
         username  = request.data.get('username')
         password  = request.data.get('password')
-        user_data = authenticate(username=username,password=password)
+        user_data = authenticate(username=username, password=password)
+        
         if user_data is not None:
-            login(request,user_data)
+            login(request, user_data)
             refresh = RefreshToken.for_user(user_data)
             access_token = str(refresh.access_token)
             refresh_token = str(refresh)
- 
-            print(f"Tokens generated: access={access_token}, refresh={refresh_token}")  
+
+            # Get role (customize based on your model)
+            role = getattr(user_data, 'role', 'user')
+            print("role",role)
             response = Response({
                 "status": "success",
                 "message": "Logged in successfully!",
                 "access_token": access_token,
+                "role": role,
             }, status=status.HTTP_200_OK)
-            response.set_cookie(key="refresh_token",value=refresh_token,httponly=True,secure=False,samesite='None')
+
+            response.set_cookie(
+                key="refresh_token",
+                value=refresh_token,
+                httponly=True,
+                secure=False,
+                samesite='None'
+            )
             return response
-        return Response({"error":"Invalid credentials"},status=status.HTTP_401_UNAUTHORIZED)
+        
+        return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
     
 
 # Superadmin section
@@ -99,7 +114,7 @@ class SuperViewAdmin(APIView):
 
 '''Superadmin creating and managing admin'''
 
-class SuperViewUser(APIView):
+class SuperViewUser(LoginRequiredMixin, IsSuperAdmin, View):
     permission_classes = [IsSuperAdmin]
 
     def get(self,request):
@@ -109,13 +124,15 @@ class SuperViewUser(APIView):
     
 
     def post(self,request):
-        serializer_data = UserSerializer(data = request.data)
+        serializer_data = UserSerializer(data=request.POST)
+        print(" request.data", request.POST)
         if serializer_data.is_valid():
             user = serializer_data.save(role='user')
             user.set_password(serializer_data.validated_data['password'])
             user.save()
-            return Response({"message":"User created successfully"},status=status.HTTP_201_CREATED)
+            return redirect('/UsersTemplateView/')
         else:
+            print("serializer_data.errors",serializer_data.errors)
             return Response({"message":"User registration failed","error":serializer_data.errors},status=status.HTTP_400_BAD_REQUEST)
    
     def delete(self,request):
@@ -125,7 +142,7 @@ class SuperViewUser(APIView):
         try:
             user_check  = User.objects.get(id=user_id,role="user")
             user_check.delete()
-            return Response({"message":"Successfully deleted user"},status=status.HTTP_404_NOT_FOUND)
+            return redirect('/UsersTemplateView/')
         except User.DoesNotExist:
             return Response({"message":"User not found"},status=status.HTTP_404_NOT_FOUND)
    
@@ -292,3 +309,32 @@ class UserCreation(APIView):
         assigned_task = Task.objects.filter(assigned_to=user)
         assigned_user = TaskSerializer(assigned_task,many=True)
         return Response({assigned_task.data},status=status.HTTP_200_OK)
+    
+
+class LoginPage(TemplateView):
+    template_name = 'login.html'
+
+
+class IndexPage(LoginRequiredMixin, TemplateView):
+    template_name = 'index.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        role = getattr(request.user, 'role', 'user')
+        if role not in ['superadmin', 'admin']:
+            return redirect('')  # or render a "403.html" page
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['role'] = getattr(self.request.user, 'role', 'user')
+        return context
+    
+class UsersTemplateView(LoginRequiredMixin, TemplateView):
+    template_name = 'users.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_data = User.objects.filter(role="user")
+        context['user_data'] = user_data
+        
+        return context
