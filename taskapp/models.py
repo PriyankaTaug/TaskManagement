@@ -35,6 +35,8 @@ class Task(models.Model):
     worked_hours = models.FloatField(default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    completion_report = models.TextField(blank=True, null=True)
+
 
     def __str__(self):
         return self.title
