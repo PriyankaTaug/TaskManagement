@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Users</title>
+</head>
+<body>
+    <h2>User List</h2>
+    <ul id="user-list">
+        {% for i in user_data %}
+        <li>
+            {{ i.username }}
+    
+            <form method="DELETE" action="{% url 'taskapp:SuperViewUser' %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ i.id }}">
+                <button type="submit">Delete</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    
+
+    <h3>Create User</h3>
+    <form id="create-user-form" method="POST" action="{% url 'taskapp:SuperViewUser' %}">
+        {% csrf_token %}
+        <input type="text" id="username" placeholder="Username" name ="username" required>
+        <input type="email" id="email" placeholder="Email" required name="email">
+        <input type="password" id="password" placeholder="Password" name="password" required>
+        <button type="submit">Create</button>
+    </form>
+
+    
+</body>
+</html>
