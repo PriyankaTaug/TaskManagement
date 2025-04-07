@@ -6,6 +6,7 @@ from .views import *
 app_name  ="taskapp"
 
 urlpatterns = [
+    
     path('', LoginPage.as_view(), name='LoginPage'),
     path('register/', RegisterUserAPIView.as_view(), name='register'),
     path('LoginUser/', LoginUser.as_view(), name='LoginUser'),
@@ -17,4 +18,6 @@ urlpatterns = [
     path('SuperCreateTask/', SuperCreateTask.as_view(), name='SuperCreateTask'),
     path('AdminCreateTask/', AdminCreateTask.as_view(), name='AdminCreateTask'),
     path('AdminViewReport/', AdminViewReport.as_view(), name='AdminViewReport'),
+    path('SuperDeleteUser/', SuperDeleteUser.as_view(), name='SuperDeleteUser'),
+    path('UsersTaskView/', UsersTaskView.as_view(), name='UsersTaskView'),
 ]
