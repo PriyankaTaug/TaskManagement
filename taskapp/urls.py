@@ -17,4 +17,9 @@ urlpatterns = [
     path('SuperCreateTask/', SuperCreateTask.as_view(), name='SuperCreateTask'),
     path('AdminCreateTask/', AdminCreateTask.as_view(), name='AdminCreateTask'),
     path('AdminViewReport/', AdminViewReport.as_view(), name='AdminViewReport'),
+    path('SuperDeleteUser/', SuperDeleteUser.as_view(), name='SuperDeleteUser'),
+    path('UsersTaskView/', UsersTaskView.as_view(), name='UsersTaskView'),
+    path('SuperTaskDeleteUser/', SuperTaskDeleteUser.as_view(), name='SuperTaskDeleteUser'),
+    path('SuperTaskReport/', SuperTaskReport.as_view(), name='SuperTaskReport'),
+    
 ]
