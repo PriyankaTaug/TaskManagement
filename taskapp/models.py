@@ -32,7 +32,7 @@ class Task(models.Model):
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="tasks")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="created_tasks")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
-    worked_hours = models.FloatField(default=0.0)
+    worked_hours = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completion_report = models.TextField(blank=True, null=True)

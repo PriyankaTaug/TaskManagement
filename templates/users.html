@@ -10,7 +10,7 @@
         <li>
             {{ i.username }}
     
-            <form method="DELETE" action="{% url 'taskapp:SuperViewUser' %}" style="display:inline;">
+            <form method="POST" action="{% url 'taskapp:SuperDeleteUser' %}" style="display:inline;">
                 {% csrf_token %}
                 <input type="hidden" name="user_id" value="{{ i.id }}">
                 <button type="submit">Delete</button>
@@ -24,7 +24,7 @@
     <form id="create-user-form" method="POST" action="{% url 'taskapp:SuperViewUser' %}">
         {% csrf_token %}
         <input type="text" id="username" placeholder="Username" name ="username" required>
-        <input type="email" id="email" placeholder="Email" required name="email">
+        <input type="text" id="email" placeholder="Email" required name="email">
         <input type="password" id="password" placeholder="Password" name="password" required>
         <button type="submit">Create</button>
     </form>

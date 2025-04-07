@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Users</title>
+</head>
+<body>
+    <h2>Task List</h2>
+    <ul id="user-list">
+        {% for i in user_data %}
+        <li>
+            <form method="POST" action="{% url 'taskapp:SuperCreateTask' %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="_method" value="PATCH">
+                <input type="hidden" name="user_id" value="{{ i.id }}">
+                <input type="text" name="title" value="{{ i.title }}">
+                <input type="text" name="completion_report" value="{{ i.completion_report }}">
+                <input type="text" name="worked_hours" value="{{ worked_hours }}">
+                <button type="submit">Update</button>
+            </form>
+            
+        </li>
+        {% endfor %}
+    </ul>
+    
+
+    
+    
+
+    
+</body>
+</html>

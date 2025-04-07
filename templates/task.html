@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Users</title>
+</head>
+<body>
+    <h2>Task List</h2>
+    <ul id="user-list">
+        {% for i in user_task %}
+        <li>
+            {{ i.title }}
+    
+            <form method="POST" action="{% url 'taskapp:SuperTaskDeleteUser' %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ i.id }}">
+                <button type="submit">Delete</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    
+
+    <h3>Create Task</h3>
+    <form id="create-user-form" method="POST" action="{% url 'taskapp:SuperCreateTask' %}">
+        {% csrf_token %}
+        <input type="text" id="title" placeholder="Title" name="title" required>
+        <input type="text" id="description" placeholder="Description" name="description" required>
+        
+        <select name="assigned_user" class="task-select" required>
+            <option value="">Select User</option>
+            {% for i in user_data %}
+            <option value="{{ i.id }}">{{ i.username }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit">Create</button>
+    </form>
+    
+
+    
+</body>
+</html>

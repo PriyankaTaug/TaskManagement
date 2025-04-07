@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.views import View
 from rest_framework.views import APIView
@@ -54,14 +55,13 @@ class LoginUser(APIView):
             }, status=status.HTTP_200_OK)
 
             response.set_cookie(
-                key="refresh_token",
-                value=refresh_token,
-                httponly=True,
-                secure=False,
-                samesite='None'
-            )
-            return response
-        
+            key='refresh_token',
+            value=str(refresh_token),
+            httponly=True,
+            samesite='Lax',  # or 'None' if cross-domain and using HTTPS
+            secure=True      # required if samesite='None'
+        )
+                
         return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
     
@@ -175,13 +175,35 @@ class SuperCreateTask(APIView):
         return Response(serializer.data,status=status.HTTP_200_OK)
     
 
-    def post(self,request):
-        serializer_data = TaskSerializer(data = request.data)
-        if serializer_data.is_valid():
-            serializer_data.save()
-            return Response({"message":"User created successfully"},status=status.HTTP_201_CREATED)
-        else:
-            return Response({"message":"User registration failed","error":serializer_data.errors},status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request):
+        try:
+            # Get refresh token from cookie
+            refresh_token = request.COOKIES.get('refresh_token')
+            print("refresh_token",refresh_token)
+            if not refresh_token:
+                return Response({"error": "Refresh token not found in cookies"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Decode refresh token
+            decoded_token = RefreshToken(refresh_token)
+            user_id = decoded_token['user_id']
+
+            # Get the user instance
+            user = User.objects.get(id=user_id)
+
+            # Add created_by to data
+            data = request.data.copy()
+            data['created_by'] = user.id
+
+            serializer = TaskSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Task created successfully"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"message": "Task creation failed", "error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
    
     def delete(self,request):
         task_id =  request.query_params.get('task_id')
@@ -337,4 +359,84 @@ class UsersTemplateView(LoginRequiredMixin, TemplateView):
         user_data = User.objects.filter(role="user")
         context['user_data'] = user_data
         
+        return context
+
+class SuperDeleteUser(LoginRequiredMixin, IsSuperAdmin, View):
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        admin_list = User.objects.filter(role='user')
+        serializer = UserSerializer(admin_list, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        if request.method == 'POST':  
+            user_id = request.POST.get('user_id')
+            if not user_id:
+                return JsonResponse({"message": "User ID is required"}, status=400)
+            try:
+                user_check = User.objects.get(id=user_id, role="user")
+                user_check.delete()
+                return redirect('/UsersTemplateView/')
+            except User.DoesNotExist:
+                return JsonResponse({"message": "User not found"}, status=404)
+        
+        # Regular post logic for user creation
+        serializer_data = UserSerializer(data=request.POST)
+        if serializer_data.is_valid():
+            user = serializer_data.save(role='user')
+            user.set_password(serializer_data.validated_data['password'])
+            user.save()
+            return redirect('/UsersTemplateView/')
+        else:
+            return JsonResponse({"message": "User registration failed", "error": serializer_data.errors}, status=400)
+
+'''Admin panel'''
+
+class UsersTaskView(LoginRequiredMixin, TemplateView):
+    template_name = 'task.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_task = Task.objects.all()
+        user_data = User.objects.filter(role="user")
+        context['user_task'] = user_task
+        context['user_data'] = user_data
+        return context
+    
+
+class SuperTaskDeleteUser(LoginRequiredMixin, IsSuperAdmin, View):
+    permission_classes = [IsSuperAdmin]
+    def post(self, request):
+        if request.method == 'POST':  
+            user_id = request.POST.get('id')
+            if not user_id:
+                return JsonResponse({"message": "Task ID is required"}, status=400)
+            try:
+                task_check = Task.objects.get(id=user_id)
+                task_check.delete()
+                return redirect('/UsersTaskView/')
+            except User.DoesNotExist:
+                return JsonResponse({"message": "Task not found"}, status=404)
+        
+        # Regular post logic for user creation
+        serializer_data = UserSerializer(data=request.POST)
+        if serializer_data.is_valid():
+            user = serializer_data.save(role='user')
+            user.set_password(serializer_data.validated_data['password'])
+            user.save()
+            return redirect('/UsersTemplateView/')
+        else:
+            return JsonResponse({"message": "User registration failed", "error": serializer_data.errors}, status=400)
+
+
+
+
+class SuperTaskReport(LoginRequiredMixin, TemplateView):
+    template_name = 'report.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_task = Task.objects.filter(status="Completed")
+        context['user_data'] = user_task
         return context
